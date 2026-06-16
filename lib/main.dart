@@ -1,17 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 void main() {
   runApp(const DompetSakuApp());
 }
 
 // ==========================================
-// DATA MODEL
+// DATA MODEL + JSON SERIALIZATION
 // ==========================================
 class Transaksi {
   final String id;
   final String judul;
   final double jumlah;
-  final String jenis; // 'pemasukan' atau 'pengeluaran'
+  final String jenis; 
   final String kategori;
   final DateTime tanggal;
   final String catatan;
@@ -25,6 +27,32 @@ class Transaksi {
     required this.tanggal,
     this.catatan = 'Tidak ada catatan tambahan.',
   });
+
+  // Mengubah data objek menjadi format Map (untuk disimpan ke memori)
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'judul': judul,
+      'jumlah': jumlah,
+      'jenis': jenis,
+      'kategori': kategori,
+      'tanggal': tanggal.toIso8601String(),
+      'catatan': catatan,
+    };
+  }
+
+  // Mengembalikan data dari format Map menjadi objek Transaksi kembali
+  factory Transaksi.fromMap(Map<String, dynamic> map) {
+    return Transaksi(
+      id: map['id'],
+      judul: map['judul'],
+      jumlah: map['jumlah'],
+      jenis: map['jenis'],
+      kategori: map['kategori'],
+      tanggal: DateTime.parse(map['tanggal']),
+      catatan: map['catatan'],
+    );
+  }
 }
 
 class DompetSakuApp extends StatelessWidget {
@@ -38,7 +66,6 @@ class DompetSakuApp extends StatelessWidget {
       theme: ThemeData(
         primaryColor: const Color(0xFF008A45),
         scaffoldBackgroundColor: const Color(0xFFF4F6F8),
-        // OPSI 1 & 2: Menerapkan Font Poppins global & tema Material 3
         fontFamily: 'Poppins',
         useMaterial3: true,
       ),
@@ -56,11 +83,43 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _currentIndex = 0;
+  List<Transaksi> _daftarTransaksi = [];
+  bool _isLoading = true;
 
-  final List<Transaksi> _daftarTransaksi = [
-    Transaksi(id: 't1', judul: 'Uang Saku Bulanan', jumlah: 500000, jenis: 'pemasukan', kategori: 'Saku', tanggal: DateTime.now(), catatan: 'Transferan awal bulan dari orang tua.'),
-    Transaksi(id: 't2', judul: 'Beli Kopi Susu', jumlah: 25000, jenis: 'pengeluaran', kategori: 'Konsumsi', tanggal: DateTime.now(), catatan: 'Kopi susu gula aren di kedai dekat rumah.'),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _muatDataTransaksi(); // Otomatis panggil data saat aplikasi dibuka
+  }
+
+  // DATABASE LOGIC: Mengambil data dari memori HP
+  Future<void> _muatDataTransaksi() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String? dataString = prefs.getString('saved_transaksi');
+    
+    if (dataString != null) {
+      final List<dynamic> dataDidecode = json.decode(dataString);
+      setState(() {
+        _daftarTransaksi = dataDidecode.map((item) => Transaksi.fromMap(item)).toList();
+        _isLoading = false;
+      });
+    } else {
+      // Jika database kosong, berikan data dummy default awal
+      setState(() {
+        _daftarTransaksi = [
+          Transaksi(id: 't1', judul: 'Uang Saku Bulanan', jumlah: 500000, jenis: 'pemasukan', kategori: 'Saku', tanggal: DateTime.now(), catatan: 'Transferan awal bulan.'),
+        ];
+        _isLoading = false;
+      });
+    }
+  }
+
+  // DATABASE LOGIC: Menyimpan data secara permanen ke memori HP
+  Future<void> _simpanKeDatabase() async {
+    final prefs = await SharedPreferences.getInstance();
+    final List<Map<String, dynamic>> dataMap = _daftarTransaksi.map((t) => t.toMap()).toList();
+    await prefs.setString('saved_transaksi', json.encode(dataMap));
+  }
 
   double get _totalPemasukan => _daftarTransaksi.where((t) => t.jenis == 'pemasukan').fold(0, (sum, item) => sum + item.jumlah);
   double get _totalPengeluaran => _daftarTransaksi.where((t) => t.jenis == 'pengeluaran').fold(0, (sum, item) => sum + item.jumlah);
@@ -80,12 +139,14 @@ class _MainNavigationState extends State<MainNavigation> {
     setState(() {
       _daftarTransaksi.insert(0, transaksiBaru);
     });
+    
+    _simpanKeDatabase(); // Efek auto-save setiap kali user menambah data baru
   }
 
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      _buildDashboardBeranda(),
+      _isLoading ? const Center(child: CircularProgressIndicator()) : _buildDashboardBeranda(),
       const Center(child: Text('History Transaksi', style: TextStyle(color: Colors.grey))),
       const SizedBox(),
       const Center(child: Text('Dompet Saya', style: TextStyle(color: Colors.grey))),
@@ -98,7 +159,7 @@ class _MainNavigationState extends State<MainNavigation> {
         onPressed: () => _tampilkanFormInput(context),
         backgroundColor: const Color(0xFF008A45),
         shape: const CircleBorder(),
-        child: const Icon(Icons.add_circle, color: Colors.white, size: 32), // Menggunakan ikon yang lebih variatif
+        child: const Icon(Icons.add_circle, color: Colors.white, size: 32),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: BottomAppBar(
@@ -171,7 +232,7 @@ class _MainNavigationState extends State<MainNavigation> {
             const SizedBox(height: 10),
             
             _daftarTransaksi.isEmpty
-                ? const Center(child: Text('Belum ada transaksi.'))
+                ? const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('Belum ada transaksi.', style: TextStyle(color: Colors.grey))))
                 : ListView.builder(
                     shrinkWrap: true,
                     physics: const NeverScrollableScrollPhysics(),
@@ -184,13 +245,12 @@ class _MainNavigationState extends State<MainNavigation> {
                         elevation: 0,
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         child: ListTile(
-                          // OPSI 3: Mengarahkan ke Halaman Detail saat list di-klik
                           onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HalamanDetailTransaksi(transaksi: item))),
                           leading: CircleAvatar(
                             backgroundColor: isPemasukan ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
                             child: Icon(isPemasukan ? Icons.account_balance_wallet_rounded : Icons.shopping_bag_rounded, color: isPemasukan ? Colors.green : Colors.red),
                           ),
-                          title: Text(item.judul, style: const TextStyle(widgets: [FontWeight.bold], fontSize: 14)),
+                          title: Text(item.judul, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                           subtitle: Text(item.kategori, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                           trailing: Text('${isPemasukan ? "+" : "-"} Rp ${item.jumlah.toStringAsFixed(0)}', style: TextStyle(fontWeight: FontWeight.bold, color: isPemasukan ? Colors.green : Colors.red)),
                         ),
@@ -263,9 +323,6 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 }
 
-// ==========================================
-// OPSI 3: HALAMAN DETAIL TRANSAKSI
-// ==========================================
 class HalamanDetailTransaksi extends StatelessWidget {
   final Transaksi transaksi;
   const HalamanDetailTransaksi({super.key, required this.transaksi});

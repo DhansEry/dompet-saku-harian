@@ -1,5 +1,5 @@
 name: dompet_saku_harian
-description: "Aplikasi pencatat keuangan harian."
+description: "Aplikasi pencatat keuangan harian dengan database lokal."
 version: 1.0.0+1
 
 environment:
@@ -8,12 +8,12 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Menambahkan paket ikon Google Fonts & Cupertino Icons
   cupertino_icons: ^1.0.6
+  # Library untuk menyimpan data secara permanen di memori HP
+  shared_preferences: ^2.2.2
 
 flutter:
   uses-material-design: true
-  # Mendaftarkan Font Google Poppins (Simulasi aset lokal jika nanti diunduh)
   fonts:
     - family: Poppins
       fonts:
