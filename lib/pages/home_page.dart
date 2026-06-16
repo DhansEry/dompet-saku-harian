@@ -18,6 +18,7 @@ class HomePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+    final dateFormatter = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
     
     double totalIncome = transactions.where((t) => t.type == 'income').fold(0.0, (sum, item) => sum + item.amount);
     double totalExpense = transactions.where((t) => t.type == 'expense').fold(0.0, (sum, item) => sum + item.amount);
@@ -146,7 +147,18 @@ class HomePage extends StatelessWidget {
                             child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward, color: isIncome ? Colors.green : Colors.red),
                           ),
                           title: Text(tx.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text('${tx.category} • ${tx.wallet}'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('${tx.category} • ${tx.wallet}', style: const TextStyle(fontSize: 13)),
+                              const SizedBox(height: 2),
+                              Text(
+                                dateFormatter.format(tx.date),
+                                style: const TextStyle(color: Colors.grey, fontSize: 11),
+                              ),
+                            ],
+                          ),
+                          isThreeLine: true,
                           trailing: Text(
                             '${isIncome ? "+" : "-"} ${currencyFormatter.format(tx.amount)}',
                             style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
