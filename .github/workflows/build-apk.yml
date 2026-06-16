@@ -28,8 +28,6 @@ jobs:
           flutter-version: '3.19.x'
           channel: 'stable'
 
-      # TRICK: Pindahkan isi proyek ke folder baru yang namanya valid (pakai underscore)
-      # agar Flutter create & Flutter build tidak protes lagi soal penamaan Paket.
       - name: Perbaiki Penamaan Folder Proyek
         run: |
           mkdir ../dompet_saku_harian
@@ -51,8 +49,13 @@ jobs:
           cd ../dompet_saku_harian
           flutter build apk --release
 
+      # Perbaikan: Kita salin dulu file APK-nya ke folder utama proyek saat ini, 
+      # baru kita upload tanpa menggunakan path ".."
+      - name: Amankan File APK ke Folder Utama
+        run: cp ../dompet_saku_harian/build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
+
       - name: Upload File APK Hasil Build
         uses: actions/upload-artifact@v4
         with:
           name: Dompet-Saku-Harian-Release-APK
-          path: ../dompet_saku_harian/build/app/outputs/flutter-apk/app-release.apk
+          path: app-release.apk
