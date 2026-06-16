@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Java Development Kit (JDK)
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -25,7 +25,7 @@ jobs:
       - name: Setup Flutter Environment
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.x' # Menggunakan versi stabil mendasar
+          flutter-version: '3.19.x'
           channel: 'stable'
 
       - name: Ambil Dependencies (Library)
@@ -35,7 +35,7 @@ jobs:
         run: flutter build apk --release
 
       - name: Upload File APK Hasil Build
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Dompet-Saku-Harian-Release-APK
           path: build/app/outputs/flutter-apk/app-release.apk
