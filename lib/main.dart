@@ -5,6 +5,7 @@ import 'models/transaction.dart';
 import 'pages/home_page.dart';
 import 'pages/wallet_page.dart';
 import 'pages/report_page.dart';
+import 'pages/profile_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -194,7 +195,7 @@ class _MainNavigationState extends State<MainNavigation> {
       ),
       WalletPage(transactions: _transactions),
       ReportPage(transactions: _transactions),
-      const Center(child: Text('Halaman Profil & Pengaturan')),
+      const ProfilePage(),
     ];
 
     return Scaffold(

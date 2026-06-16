@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/transaction.dart';
+import 'all_transactions_page.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
@@ -115,7 +116,15 @@ class HomePage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Aktivitas Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () => onNavigateToPage(2), child: const Text('Lihat Semua', style: TextStyle(color: Color(0xFF0D9488)))),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AllTransactionsPage(transactions: transactions)),
+                    );
+                  },
+                  child: const Text('Lihat Semua', style: TextStyle(color: Color(0xFF0D9488))),
+                ),
               ],
             ),
             transactions.isEmpty
