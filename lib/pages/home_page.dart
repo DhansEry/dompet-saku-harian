@@ -16,7 +16,6 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     
-    // Hitung total saldo, pemasukan, dan pengeluaran
     double totalIncome = transactions.where((t) => t.type == 'income').fold(0.0, (sum, item) => sum + item.amount);
     double totalExpense = transactions.where((t) => t.type == 'expense').fold(0.0, (sum, item) => sum + item.amount);
     double currentBalance = totalIncome - totalExpense;
@@ -38,123 +37,119 @@ class HomePage extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: columnData(context, currentBalance, totalIncome, totalExpense, currencyFormatter),
-      ),
-    );
-  }
-
-  Widget columnData(BuildContext context, double balance, double income, double expense, NumberFormat fmt) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Kartu Utama Saldo Hijau
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: const Color(0xFF0D9488),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Saldo Aktif Hari Ini', style: TextStyle(color: Colors.white70, fontSize: 14)),
-              const SizedBox(height: 4),
-              Text(fmt.format(balance), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('↗ Lebih tinggi dari kemarin', style: TextStyle(color: Colors.whiteCE, fontSize: 12)),
-              const Divider(color: Colors.white24, height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.between,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Kartu Utama Saldo Hijau
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0D9488),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text('Saldo Aktif Hari Ini', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text(currencyFormatter.format(currentBalance), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('↗ Lebih tinggi dari kemarin', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const Divider(color: Colors.white24, height: 24),
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const CircleAvatar(backgroundColor: Colors.white24, radius: 16, child: Icon(Icons.arrow_downward, color: Colors.white, size: 16)),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          const Text('Pemasukan', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                          Text(fmt.format(income), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          const CircleAvatar(backgroundColor: Colors.white24, radius: 16, child: Icon(Icons.arrow_downward, color: Colors.white, size: 16)),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Pemasukan', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                              Text(currencyFormatter.format(totalIncome), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
+                          )
                         ],
-                      )
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      const CircleAvatar(backgroundColor: Colors.white24, radius: 16, child: Icon(Icons.arrow_upward, color: Colors.white, size: 16)),
-                      const SizedBox(width: 8),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      ),
+                      Row(
                         children: [
-                          const Text('Pengeluaran', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                          Text(fmt.format(expense), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          const CircleAvatar(backgroundColor: Colors.white24, radius: 16, child: Icon(Icons.arrow_upward, color: Colors.white, size: 16)),
+                          const SizedBox(width: 8),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Pengeluaran', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                              Text(currencyFormatter.format(totalExpense), style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                            ],
+                          )
                         ],
                       )
                     ],
                   )
                 ],
-              )
-            ],
-          ),
-        ),
-        const SizedBox(height: 24),
-
-        // Menu Cepat Grid
-        const Text('Menu Cepat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 12),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 4,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          children: [
-            _buildMenuItem(Icons.add_circle_outline, 'Pemasukan', Colors.green),
-            _buildMenuItem(Icons.remove_circle_outline, 'Pengeluaran', Colors.red),
-            _buildMenuItem(Icons.account_balance_wallet_outlined, 'Dompet', Colors.blue),
-            _buildMenuItem(Icons.pie_chart_outline, 'Laporan', Colors.purple),
-          ],
-        ),
-        const SizedBox(height: 24),
-
-        // Daftar Transaksi Terbaru
-        Row(
-          mainAxisAlignment: MainAxisAlignment.between,
-          children: [
-            const Text('Aktivitas Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            TextButton(onPressed: () {}, child: const Text('Lihat Semua', style: TextStyle(color: Color(0xFF0D9488)))),
-          ],
-        ),
-        transactions.isEmpty
-            ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text('Belum ada transaksi terbaru')))
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: transactions.length > 5 ? 5 : transactions.length,
-                itemBuilder: (context, index) {
-                  final tx = transactions[index];
-                  final isIncome = tx.type == 'income';
-                  return Card(
-                    elevation: 0,
-                    margin: const EdgeInsets.only(bottom: 10),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                        child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward, color: isIncome ? Colors.green : Colors.red),
-                      ),
-                      title: Text(tx.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Text('${tx.category} • ${tx.wallet}'),
-                      trailing: Text(
-                        '${isIncome ? "+" : "-"} ${fmt.format(tx.amount)}',
-                        style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  );
-                },
               ),
-      ],
+            ),
+            const SizedBox(height: 24),
+
+            // Menu Cepat Grid
+            const Text('Menu Cepat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 4,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              children: [
+                _buildMenuItem(Icons.add_circle_outline, 'Pemasukan', Colors.green),
+                _buildMenuItem(Icons.remove_circle_outline, 'Pengeluaran', Colors.red),
+                _buildMenuItem(Icons.account_balance_wallet_outlined, 'Dompet', Colors.blue),
+                _buildMenuItem(Icons.pie_chart_outline, 'Laporan', Colors.purple),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // Daftar Transaksi Terbaru
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Aktivitas Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                TextButton(onPressed: () {}, child: const Text('Lihat Semua', style: TextStyle(color: Color(0xFF0D9488)))),
+              ],
+            ),
+            transactions.isEmpty
+                ? const Center(child: Padding(padding: EdgeInsets.all(20.0), child: Text('Belum ada transaksi terbaru')))
+                : ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: transactions.length > 5 ? 5 : transactions.length,
+                    itemBuilder: (context, index) {
+                      final tx = transactions[index];
+                      final isIncome = tx.type == 'income';
+                      return Card(
+                        elevation: 0,
+                        margin: const EdgeInsets.only(bottom: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: isIncome ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                            child: Icon(isIncome ? Icons.arrow_downward : Icons.arrow_upward, color: isIncome ? Colors.green : Colors.red),
+                          ),
+                          title: Text(tx.title, style: const TextStyle(fontWeight: FontWeight.bold)),
+                          subtitle: Text('${tx.category} • ${tx.wallet}'),
+                          trailing: Text(
+                            '${isIncome ? "+" : "-"} ${currencyFormatter.format(tx.amount)}',
+                            style: TextStyle(color: isIncome ? Colors.green : Colors.red, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+          ],
+        ),
+      ),
     );
   }
 
