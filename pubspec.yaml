@@ -8,6 +8,15 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  # Menambahkan paket ikon Google Fonts & Cupertino Icons
+  cupertino_icons: ^1.0.6
 
 flutter:
   uses-material-design: true
+  # Mendaftarkan Font Google Poppins (Simulasi aset lokal jika nanti diunduh)
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: fonts/Poppins-Regular.ttf
+        - asset: fonts/Poppins-Bold.ttf
+          weight: 700
