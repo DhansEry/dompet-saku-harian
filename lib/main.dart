@@ -200,7 +200,7 @@ class _MainNavigationState extends State<MainNavigation> {
       ),
       WalletPage(transactions: _transactions),
       ReportPage(transactions: _transactions),
-      const ProfilePage(),
+      ProfilePage(onDataRestored: _loadData),
     ];
 
     return Scaffold(

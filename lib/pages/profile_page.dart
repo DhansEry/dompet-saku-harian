@@ -1,7 +1,82 @@
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ProfilePage extends StatelessWidget {
-  const ProfilePage({Key? key}) : super(key: key);
+  final VoidCallback onDataRestored; // Callback untuk menyegarkan data di halaman utama
+
+  const ProfilePage({Key? key, required this.onDataRestored}) : super(key: key);
+
+  // FUNGSI 1: Ekspor data ke file dan Bagikan (Backup)
+  Future<void> _handleBackup(BuildContext context) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? txData = prefs.getString('saved_transactions');
+
+      if (txData == null || txData == '[]') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Belum ada data transaksi untuk dicadangkan!')),
+        );
+        return;
+      }
+
+      // Buat file temporer di dalam sistem
+      final tempDir = await getTemporaryDirectory();
+      final file = Scaffold(body: Container()); // Placeholder
+      final String fileName = 'Backup_DompetSaku_${DateTime.now().millisecondsSinceEpoch}.json';
+      final File backupFile = File('${tempDir.path}/$fileName');
+
+      // Tulis data transaksi ke file tersebut
+      await backupFile.writeAsString(txData);
+
+      // Munculkan menu Share bawaan Android (bisa pilih Google Drive, WA, dll)
+      final XFile xFile = XFile(backupFile.path);
+      await Share.shareXFiles([xFile], text: 'File Cadangan Dompet Saku Harian');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal membuat cadangan: $e')),
+      );
+    }
+  }
+
+  // FUNGSI 2: Ambil file JSON dan masukkan kembali ke aplikasi (Restore)
+  Future<void> _handleRestore(BuildContext context) async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
+
+      if (result != null && result.files.single.path != null) {
+        final File file = File(result.files.single.path!);
+        final String content = await file.readAsString();
+
+        // Validasi struktur file JSON apakah benar data transaksi
+        final decoded = jsonDecode(content);
+        if (decoded is List) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('saved_transactions', content);
+
+          // Panggil fungsi refresh data utama
+          onDataRestored();
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('🎉 Data berhasil dipulihkan kembali!')),
+          );
+        } else {
+          throw const FormatException('Format file cadangan tidak valid');
+        }
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Gagal memulihkan data: $e')),
+      );
+    }
+  }
 
   void _showFeatureAlert(BuildContext context, String featureName) {
     showDialog(
@@ -17,7 +92,7 @@ class ProfilePage extends StatelessWidget {
             ],
           ),
           content: Text(
-            'Fitur untuk $featureName sedang dalam tahap pengembangan dan akan segera aktif pada pembaruan berikutnya!',
+            'Fitur untuk $featureName sedang dalam tahap pengembangan!',
             style: const TextStyle(fontSize: 14),
           ),
           actions: [
@@ -45,7 +120,6 @@ class ProfilePage extends StatelessWidget {
         padding: const EdgeInsets.all(24.0),
         child: Column(
           children: [
-            // Avatar dan Nama Pengguna
             const CircleAvatar(
               radius: 50,
               backgroundColor: Color(0xFF0D9488),
@@ -62,7 +136,6 @@ class ProfilePage extends StatelessWidget {
             ),
             const SizedBox(height: 32),
 
-            // Daftar Tombol Fitur Pengaturan
             _buildProfileTile(
               context,
               icon: Icons.security_rounded,
@@ -77,12 +150,21 @@ class ProfilePage extends StatelessWidget {
               subtitle: 'Sesuaikan warna visual sistem',
               onTap: () => _showFeatureAlert(context, 'Tema Aplikasi'),
             ),
+            // SEKARANG AKTIF: Tombol Cadangkan Data
             _buildProfileTile(
               context,
               icon: Icons.cloud_upload_outlined,
-              title: 'Cadangan Data',
-              subtitle: 'Simpan data transaksi ke cloud',
-              onTap: () => _showFeatureAlert(context, 'Cadangan Data'),
+              title: 'Cadangkan Data',
+              subtitle: 'Ekspor data transaksi ke Google Drive/File',
+              onTap: () => _handleBackup(context),
+            ),
+            // SEKARANG AKTIF: Tombol Pulihkan Data
+            _buildProfileTile(
+              context,
+              icon: Icons.cloud_download_outlined,
+              title: 'Pulihkan Data',
+              subtitle: 'Impor kembali data dari file cadangan',
+              onTap: () => _handleRestore(context),
             ),
             _buildProfileTile(
               context,
@@ -93,10 +175,7 @@ class ProfilePage extends StatelessWidget {
             ),
 
             const SizedBox(height: 40),
-            const Text(
-              'Versi Aplikasi 1.1.0',
-              style: TextStyle(color: Colors.grey, fontSize: 12),
-            ),
+            const Text('Versi Aplikasi 1.2.0', style: TextStyle(color: Colors.grey, fontSize: 12)),
           ],
         ),
       ),
