@@ -1,80 +1,30 @@
 name: Build Flutter APK
 
-on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
+on: [push]
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-      - name: Setup Java Development Kit (JDK)
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'zulu'
-          java-version: '17'
-
-      - name: Setup Flutter Environment
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.x'
-          channel: 'stable'
+          flutter-version: '3.x'
 
-      # 1. Pindahkan ke nama folder valid agar flutter create berjalan mulus
-      - name: Perbaiki Penamaan Folder Proyek
-        run: |
-          mkdir ../dompet_saku_harian
-          cp -r ./* ../dompet_saku_harian/
-          
-      # 2. Regenerasi folder android secara utuh di server
-      - name: Regenerasi Folder Android Terbaru
-        run: |
-          cd ../dompet_saku_harian
-          flutter create --platforms=android .
+      - name: Install dependencies
+        run: flutter pub get
 
-      # 3. Ubah nama aplikasi menjadi nama formal ber-spasi di AndroidManifest
-      - name: Ganti Nama Aplikasi Resmi
-        run: |
-          cd ../dompet_saku_harian
-          sed -i 's/android:label=".*"/android:label="Dompet Saku Harian"/' android/app/src/main/AndroidManifest.xml
+      - name: Create Android directory
+        run: flutter create .
 
-      # 4. Pasang library launcher icons dan build logonya khusus untuk Android saja
-      - name: Generate Logo Aplikasi Baru
-        run: |
-          cd ../dompet_saku_harian
-          flutter pub add --dev flutter_launcher_icons
-          cat <<INNER_EOF > flutter_launcher_icons.yaml
-          flutter_launcher_icons:
-            android: "launcher_icon"
-            ios: false
-            image_path: "assets/icon/app_icon.png"
-            min_sdk_android: 21
-          INNER_EOF
-          flutter pub run flutter_launcher_icons
+      - name: Build APK
+        run: flutter build apk --release
 
-      - name: Ambil Dependencies (Library)
-        run: |
-          cd ../dompet_saku_harian
-          flutter pub get
-
-      - name: Kompilasi Aplikasi Menjadi APK
-        run: |
-          cd ../dompet_saku_harian
-          flutter build apk --release
-
-      - name: Amankan File APK ke Folder Utama
-        run: cp ../dompet_saku_harian/build/app/outputs/flutter-apk/app-release.apk ./app-release.apk
-
-      - name: Upload File APK Hasil Build
-        uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v3
         with:
-          name: Dompet-Saku-Harian-Release-APK
-          path: app-release.apk
+          name: app-release
+          path: build/app/outputs/flutter-apk/app-release.apk
