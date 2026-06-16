@@ -17,37 +17,17 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
-    final dateFormatter = DateFormat('dd MMM yyyy, HH:mm', 'id_ID');
-    
-    double totalIncome = transactions.where((t) => t.type == 'income').fold(0.0, (sum, item) => sum + item.amount);
-    double totalExpense = transactions.where((t) => t.type == 'expense').fold(0.0, (sum, item) => sum + item.amount);
-    double currentBalance = totalIncome - totalExpense;
-
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: const Text('Beranda', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            // [Widget Saldo di sini]
-            Text(currencyFormatter.format(currentBalance)),
-            const SizedBox(height: 20),
-            // Menu Cepat
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                IconButton(icon: const Icon(Icons.add), onPressed: () => onNavigateToPage(0, actionType: 'income')),
-                IconButton(icon: const Icon(Icons.remove), onPressed: () => onNavigateToPage(0, actionType: 'expense')),
-              ],
-            ),
-          ],
+      appBar: AppBar(title: const Text('Beranda')),
+      body: Center(
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AllTransactionsPage(transactions: transactions)),
+            );
+          },
+          child: const Text('Lihat Semua Transaksi'),
         ),
       ),
     );
