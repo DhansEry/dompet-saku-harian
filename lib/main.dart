@@ -28,7 +28,6 @@ class Transaksi {
     this.catatan = 'Tidak ada catatan tambahan.',
   });
 
-  // Mengubah data objek menjadi format Map (untuk disimpan ke memori)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -41,7 +40,6 @@ class Transaksi {
     };
   }
 
-  // Mengembalikan data dari format Map menjadi objek Transaksi kembali
   factory Transaksi.fromMap(Map<String, dynamic> map) {
     return Transaksi(
       id: map['id'],
@@ -89,10 +87,9 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   void initState() {
     super.initState();
-    _muatDataTransaksi(); // Otomatis panggil data saat aplikasi dibuka
+    _muatDataTransaksi();
   }
 
-  // DATABASE LOGIC: Mengambil data dari memori HP
   Future<void> _muatDataTransaksi() async {
     final prefs = await SharedPreferences.getInstance();
     final String? dataString = prefs.getString('saved_transaksi');
@@ -104,7 +101,6 @@ class _MainNavigationState extends State<MainNavigation> {
         _isLoading = false;
       });
     } else {
-      // Jika database kosong, berikan data dummy default awal
       setState(() {
         _daftarTransaksi = [
           Transaksi(id: 't1', judul: 'Uang Saku Bulanan', jumlah: 500000, jenis: 'pemasukan', kategori: 'Saku', tanggal: DateTime.now(), catatan: 'Transferan awal bulan.'),
@@ -114,7 +110,6 @@ class _MainNavigationState extends State<MainNavigation> {
     }
   }
 
-  // DATABASE LOGIC: Menyimpan data secara permanen ke memori HP
   Future<void> _simpanKeDatabase() async {
     final prefs = await SharedPreferences.getInstance();
     final List<Map<String, dynamic>> dataMap = _daftarTransaksi.map((t) => t.toMap()).toList();
@@ -125,6 +120,7 @@ class _MainNavigationState extends State<MainNavigation> {
   double get _totalPengeluaran => _daftarTransaksi.where((t) => t.jenis == 'pengeluaran').fold(0, (sum, item) => sum + item.jumlah);
   double get _totalSaldo => _totalPemasukan - _totalPengeluaran;
 
+  // FITUR: TAMBAH DATA
   void _tambahTransaksiBaru(String judul, double jumlah, String jenis, String kategori, String catatan) {
     final transaksiBaru = Transaksi(
       id: DateTime.now().toString(),
@@ -139,8 +135,34 @@ class _MainNavigationState extends State<MainNavigation> {
     setState(() {
       _daftarTransaksi.insert(0, transaksiBaru);
     });
-    
-    _simpanKeDatabase(); // Efek auto-save setiap kali user menambah data baru
+    _simpanKeDatabase();
+  }
+
+  // FITUR: EDIT DATA
+  void _editTransaksi(String id, String judul, double jumlah, String jenis, String kategori, String catatan) {
+    final index = _daftarTransaksi.indexWhere((t) => t.id == id);
+    if (index >= 0) {
+      setState(() {
+        _daftarTransaksi[index] = Transaksi(
+          id: id,
+          judul: judul,
+          jumlah: jumlah,
+          jenis: jenis,
+          kategori: kategori,
+          tanggal: _daftarTransaksi[index].tanggal, // tanggal tetap sama
+          catatan: catatan.isEmpty ? 'Tidak ada catatan tambahan.' : catatan,
+        );
+      });
+      _simpanKeDatabase();
+    }
+  }
+
+  // FITUR: HAPUS DATA
+  void _hapusTransaksi(String id) {
+    setState(() {
+      _daftarTransaksi.removeWhere((t) => t.id == id);
+    });
+    _simpanKeDatabase();
   }
 
   @override
@@ -194,7 +216,6 @@ class _MainNavigationState extends State<MainNavigation> {
             const Text('Dompet Saku Harian', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF008A45))),
             const SizedBox(height: 20),
 
-            // KARTU SALDO
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -245,7 +266,18 @@ class _MainNavigationState extends State<MainNavigation> {
                         elevation: 0,
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         child: ListTile(
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => HalamanDetailTransaksi(transaksi: item))),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => HalamanDetailTransaksi(
+                                  transaksi: item,
+                                  onDelete: (id) => _hapusTransaksi(id),
+                                  onEdit: _tampilkanFormEdit,
+                                ),
+                              ),
+                            );
+                          },
                           leading: CircleAvatar(
                             backgroundColor: isPemasukan ? const Color(0xFFE8F5E9) : const Color(0xFFFFEBEE),
                             child: Icon(isPemasukan ? Icons.account_balance_wallet_rounded : Icons.shopping_bag_rounded, color: isPemasukan ? Colors.green : Colors.red),
@@ -321,17 +353,124 @@ class _MainNavigationState extends State<MainNavigation> {
       },
     );
   }
+
+  void _tampilkanFormEdit(BuildContext context, Transaksi transaksi) {
+    final judulController = TextEditingController(text: transaksi.judul);
+    final jumlahController = TextEditingController(text: transaksi.jumlah.toStringAsFixed(0));
+    final catatanController = TextEditingController(text: transaksi.catatan == 'Tidak ada catatan tambahan.' ? '' : transaksi.catatan);
+    String jenisTerpilih = transaksi.jenis;
+    String kategoriTerpilih = transaksi.kategori;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom + 20, top: 20, left: 20, right: 20),
+              decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Ubah Catatan Keuangan', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange)),
+                  const SizedBox(height: 15),
+                  TextField(controller: judulController, decoration: const InputDecoration(labelText: 'Keterangan', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  TextField(controller: jumlahController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Nominal (Rp)', border: OutlineInputBorder())),
+                  const SizedBox(height: 12),
+                  TextField(controller: catatanController, decoration: const InputDecoration(labelText: 'Catatan Tambahan (Opsional)', border: OutlineInputBorder())),
+                  const SizedBox(height: 15),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      ChoiceChip(label: const Text('Pemasukan'), selected: jenisTerpilih == 'pemasukan', onSelected: (val) => setModalState(() { jenisTerpilih = 'pemasukan'; kategoriTerpilih = 'Saku'; })),
+                      ChoiceChip(label: const Text('Pengeluaran'), selected: jenisTerpilih == 'pengeluaran', onSelected: (val) => setModalState(() { jenisTerpilih = 'pengeluaran'; kategoriTerpilih = 'Konsumsi'; })),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 48,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                      onPressed: () {
+                        if (judulController.text.isEmpty || jumlahController.text.isEmpty) return;
+                        final nominal = double.tryParse(jumlahController.text) ?? 0;
+                        _editTransaksi(transaksi.id, judulController.text, nominal, jenisTerpilih, kategoriTerpilih, catatanController.text);
+                        
+                        // Menutup modal bottom sheet
+                        Navigator.pop(context);
+                        // Menutup halaman detail untuk me-refresh data di beranda
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Simpan Perubahan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
 
 class HalamanDetailTransaksi extends StatelessWidget {
   final Transaksi transaksi;
-  const HalamanDetailTransaksi({super.key, required this.transaksi});
+  final Function(String) onDelete;
+  final Function(BuildContext, Transaksi) onEdit;
+
+  const HalamanDetailTransaksi({
+    super.key, 
+    required this.transaksi, 
+    required this.onDelete,
+    required this.onEdit,
+  });
 
   @override
   Widget build(BuildContext context) {
     final isPemasukan = transaksi.jenis == 'pemasukan';
     return Scaffold(
-      appBar: AppBar(title: const Text('Detail Transaksi'), backgroundColor: const Color(0xFF008A45), foregroundColor: Colors.white),
+      appBar: AppBar(
+        title: const Text('Detail Transaksi'), 
+        backgroundColor: const Color(0xFF008A45), 
+        foregroundColor: Colors.white,
+        actions: [
+          // TOMBOL EDIT
+          IconButton(
+            icon: const Icon(Icons.edit, color: Colors.white),
+            onPressed: () => onEdit(context, transaksi),
+          ),
+          // TOMBOL HAPUS
+          IconButton(
+            icon: const Icon(Icons.delete_forever, color: Colors.white),
+            onPressed: () {
+              // Dialog Konfirmasi Hapus
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Hapus Transaksi?'),
+                  content: const Text('Apakah kamu yakin ingin menghapus catatan keuangan ini?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
+                    TextButton(
+                      onPressed: () {
+                        onDelete(transaksi.id);
+                        Navigator.pop(context); // Tutup dialog
+                        Navigator.pop(context); // Kembali ke beranda
+                      }, 
+                      child: const Text('Hapus', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Card(

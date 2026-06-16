@@ -1,0 +1,41 @@
+name: Build Flutter APK
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup Java Development Kit (JDK)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter Environment
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.x' # Menggunakan versi stabil mendasar
+          channel: 'stable'
+
+      - name: Ambil Dependencies (Library)
+        run: flutter pub get
+
+      - name: Kompilasi Aplikasi Menjadi APK
+        run: flutter build apk --release
+
+      - name: Upload File APK Hasil Build
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dompet-Saku-Harian-Release-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
