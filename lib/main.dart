@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:intl/date_symbol_data_local.dart'; // Tambahkan komponen lokal ini
+import 'package:intl/date_symbol_data_local.dart';
 import 'models/transaction.dart';
 import 'pages/home_page.dart';
 import 'pages/wallet_page.dart';
@@ -9,7 +9,6 @@ import 'pages/report_page.dart';
 import 'pages/profile_page.dart';
 
 void main() {
-  // Memastikan inisialisasi lokal tanggal selesai sebelum aplikasi berjalan
   WidgetsFlutterBinding.ensureInitialized();
   initializeDateFormatting('id_ID', null).then((_) {
     runApp(const MyApp());
@@ -163,7 +162,7 @@ class _MainNavigationState extends State<MainNavigation> {
                                 type: selectedType,
                                 category: selectedCategory,
                                 wallet: selectedWallet,
-                                date: DateTime.now(), // Otomatis menyimpan tanggal & jam sekarang
+                                date: DateTime.now(),
                               ),
                             );
                           });
@@ -200,7 +199,7 @@ class _MainNavigationState extends State<MainNavigation> {
       ),
       WalletPage(transactions: _transactions),
       ReportPage(transactions: _transactions),
-      ProfilePage(onDataRestored: _loadData),
+      ProfilePage(onDataRestored: _loadData), // Callback fungsi refresh data setelah di-restore
     ];
 
     return Scaffold(
