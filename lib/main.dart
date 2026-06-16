@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'models/transaction.dart';
 import 'pages/home_page.dart';
+import 'pages/wallet_page.dart';
+import 'pages/report_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -42,7 +44,6 @@ class _MainNavigationState extends State<MainNavigation> {
     _loadData();
   }
 
-  // Mengambil data simpanan dari memori internal HP
   Future<void> _loadData() async {
     final prefs = await SharedPreferences.getInstance();
     final String? txData = prefs.getString('saved_transactions');
@@ -54,18 +55,17 @@ class _MainNavigationState extends State<MainNavigation> {
     }
   }
 
-  // Menyimpan data permanen
   Future<void> _saveData() async {
     final prefs = await SharedPreferences.getInstance();
     final String encoded = jsonEncode(_transactions.map((t) => t.toJson()).toList());
     await prefs.setString('saved_transactions', encoded);
   }
 
-  void _showAddTransactionDialog() {
+  void _showAddTransactionDialog({String? initialType}) {
     final titleController = TextEditingController();
     final amountController = TextEditingController();
-    String selectedType = 'expense';
-    String selectedCategory = 'Makanan';
+    String selectedType = initialType ?? 'expense';
+    String selectedCategory = selectedType == 'income' ? 'Gaji' : 'Makanan';
     String selectedWallet = 'Cash';
 
     showModalBottomSheet(
@@ -91,7 +91,12 @@ class _MainNavigationState extends State<MainNavigation> {
                             label: const Center(child: Text('Pengeluaran')),
                             selected: selectedType == 'expense',
                             selectedColor: Colors.red.withOpacity(0.2),
-                            onSelected: (val) => setModalState(() => selectedType = 'expense'),
+                            onSelected: (val) {
+                              setModalState(() {
+                                selectedType = 'expense';
+                                selectedCategory = 'Makanan';
+                              });
+                            },
                           ),
                         ),
                         const SizedBox(width: 10),
@@ -100,7 +105,12 @@ class _MainNavigationState extends State<MainNavigation> {
                             label: const Center(child: Text('Pemasukan')),
                             selected: selectedType == 'income',
                             selectedColor: Colors.green.withOpacity(0.2),
-                            onSelected: (val) => setModalState(() => selectedType = 'income'),
+                            onSelected: (val) {
+                              setModalState(() {
+                                selectedType = 'income';
+                                selectedCategory = 'Gaji';
+                              });
+                            },
                           ),
                         ),
                       ],
@@ -111,7 +121,10 @@ class _MainNavigationState extends State<MainNavigation> {
                     DropdownButtonFormField<String>(
                       value: selectedCategory,
                       decoration: const InputDecoration(labelText: 'Kategori'),
-                      items: ['Makanan', 'Gaji', 'Transportasi', 'Belanja', 'Hiburan', 'Lainnya'].map((String val) {
+                      items: (selectedType == 'income' 
+                        ? ['Gaji', 'Bonus', 'Usaha', 'Lainnya']
+                        : ['Makanan', 'Transportasi', 'Belanja', 'Hiburan', 'Tagihan', 'Lainnya']
+                      ).map((String val) {
                         return DropdownMenuItem<String>(value: val, child: Text(val));
                       }).toList(),
                       onChanged: (val) => setModalState(() => selectedCategory = val!),
@@ -168,17 +181,27 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     final List<Widget> pages = [
-      HomePage(transactions: _transactions, onAddTransactionPressed: _showAddTransactionDialog),
-      const Center(child: Text('Halaman Dompet (Segera Datang)')),
-      const Center(child: Text('Halaman Laporan Grafik (Segera Datang)')),
-      const Center(child: Text('Halaman Pengaturan')),
+      HomePage(
+        transactions: _transactions, 
+        onAddTransactionPressed: _showAddTransactionDialog,
+        onNavigateToPage: (index, {String? actionType}) {
+          if (actionType != null) {
+            _showAddTransactionDialog(initialType: actionType);
+          } else {
+            setState(() => _currentIndex = index);
+          }
+        },
+      ),
+      WalletPage(transactions: _transactions),
+      ReportPage(transactions: _transactions),
+      const Center(child: Text('Halaman Profil & Pengaturan')),
     ];
 
     return Scaffold(
       body: pages[_currentIndex],
       floatingActionButton: FloatingActionButton(
         backgroundColor: const Color(0xFF0D9488),
-        onPressed: _showAddTransactionDialog,
+        onPressed: () => _showAddTransactionDialog(),
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,

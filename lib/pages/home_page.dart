@@ -5,11 +5,13 @@ import 'package:intl/intl.dart';
 class HomePage extends StatelessWidget {
   final List<Transaction> transactions;
   final VoidCallback onAddTransactionPressed;
+  final Function(int, {String? actionType}) onNavigateToPage;
 
   const HomePage({
     Key? key,
     required this.transactions,
     required this.onAddTransactionPressed,
+    required this.onNavigateToPage,
   }) : super(key: key);
 
   @override
@@ -40,7 +42,6 @@ class HomePage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Kartu Utama Saldo Hijau
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(20),
@@ -93,7 +94,6 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 24),
 
-            // Menu Cepat Grid
             const Text('Menu Cepat', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             GridView.count(
@@ -103,20 +103,19 @@ class HomePage extends StatelessWidget {
               mainAxisSpacing: 16,
               crossAxisSpacing: 16,
               children: [
-                _buildMenuItem(Icons.add_circle_outline, 'Pemasukan', Colors.green),
-                _buildMenuItem(Icons.remove_circle_outline, 'Pengeluaran', Colors.red),
-                _buildMenuItem(Icons.account_balance_wallet_outlined, 'Dompet', Colors.blue),
-                _buildMenuItem(Icons.pie_chart_outline, 'Laporan', Colors.purple),
+                _buildMenuItem(Icons.add_circle_outline, 'Pemasukan', Colors.green, () => onNavigateToPage(0, actionType: 'income')),
+                _buildMenuItem(Icons.remove_circle_outline, 'Pengeluaran', Colors.red, () => onNavigateToPage(0, actionType: 'expense')),
+                _buildMenuItem(Icons.account_balance_wallet_outlined, 'Dompet', Colors.blue, () => onNavigateToPage(1)),
+                _buildMenuItem(Icons.pie_chart_outline, 'Laporan', Colors.purple, () => onNavigateToPage(2)),
               ],
             ),
             const SizedBox(height: 24),
 
-            // Daftar Transaksi Terbaru
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Aktivitas Terbaru', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                TextButton(onPressed: () {}, child: const Text('Lihat Semua', style: TextStyle(color: Color(0xFF0D9488)))),
+                TextButton(onPressed: () => onNavigateToPage(2), child: const Text('Lihat Semua', style: TextStyle(color: Color(0xFF0D9488)))),
               ],
             ),
             transactions.isEmpty
@@ -153,18 +152,21 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String label, Color color) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-          child: Icon(icon, color: color, size: 24),
-        ),
-        const SizedBox(height: 6),
-        Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
-      ],
+  Widget _buildMenuItem(IconData icon, String label, Color color, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(height: 6),
+          Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w500), textAlign: TextAlign.center),
+        ],
+      ),
     );
   }
 }
